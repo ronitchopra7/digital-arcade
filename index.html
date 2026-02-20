@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Arcade - Classic Games</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="arcade-container">
+        <header class="arcade-header">
+            <h1>🎮 Digital Arcade 🎮</h1>
+            <p>Choose a game to play!</p>
+        </header>
+
+        <div class="game-selector">
+            <button class="game-btn" data-game="snake">🐍 Snake</button>
+            <button class="game-btn" data-game="pacman">👻 Pac-Man</button>
+            <button class="game-btn" data-game="minesweeper">💣 Minesweeper</button>
+            <button class="game-btn" data-game="tetris">🧩 Tetris</button>
+            <button class="game-btn" data-game="platformer">🏃 Platformer</button>
+        </div>
+
+        <div class="game-area">
+            <!-- Snake Game -->
+            <div id="snake-game" class="game-container hidden">
+                <div class="game-header">
+                    <h2>Snake</h2>
+                    <div class="score">Score: <span id="snake-score">0</span></div>
+                    <button class="back-btn">← Back to Menu</button>
+                </div>
+                <div id="snake-start-screen" class="start-screen">
+                    <h3>Ready to play Snake?</h3>
+                    <button id="snake-start-btn" class="start-btn">Start Game</button>
+                </div>
+                <canvas id="snake-canvas" width="400" height="400" class="hidden"></canvas>
+                <div class="controls hidden" id="snake-controls">Use arrow keys or WASD to move</div>
+            </div>
+
+            <!-- Pac-Man Game -->
+            <div id="pacman-game" class="game-container hidden">
+                <div class="game-header">
+                    <h2>Pac-Man</h2>
+                    <div class="score">Score: <span id="pacman-score">0</span></div>
+                    <button class="back-btn">← Back to Menu</button>
+                </div>
+                <div id="pacman-start-screen" class="start-screen">
+                    <h3>Ready to play Pac-Man?</h3>
+                    <button id="pacman-start-btn" class="start-btn">Start Game</button>
+                </div>
+                <canvas id="pacman-canvas" width="400" height="400" class="hidden"></canvas>
+                <div class="controls hidden" id="pacman-controls">Use arrow keys to move</div>
+            </div>
+
+            <!-- Minesweeper Game -->
+            <div id="minesweeper-game" class="game-container hidden">
+                <div class="game-header">
+                    <h2>Minesweeper</h2>
+                    <button class="back-btn">← Back to Menu</button>
+                </div>
+                <div id="minesweeper-start-screen" class="start-screen">
+                    <h3>Ready to play Minesweeper?</h3>
+                    <p>16×16 board · 40 mines</p>
+                    <button id="minesweeper-start-btn" class="start-btn">Start Game</button>
+                </div>
+                <div id="minesweeper-wrapper" class="hidden">
+                    <div class="minesweeper-info-bar">
+                        <span class="mine-counter">💣 <span id="mines-count">040</span></span>
+                        <button class="minesweeper-face-btn" id="minesweeper-face">😊</button>
+                        <span class="timer">⏱ <span id="minesweeper-timer">000</span></span>
+                    </div>
+                    <div id="minesweeper-board"></div>
+                </div>
+                <div class="controls hidden" id="minesweeper-controls">Left click: reveal · Right click: flag · Click number: chord reveal</div>
+            </div>
+
+            <!-- Tetris Game -->
+            <div id="tetris-game" class="game-container hidden">
+                <div class="game-header">
+                    <h2>Tetris</h2>
+                    <div class="score">Score: <span id="tetris-score">0</span></div>
+                    <div class="score">Lines: <span id="tetris-lines">0</span></div>
+                    <button class="back-btn">← Back to Menu</button>
+                </div>
+                <div id="tetris-start-screen" class="start-screen">
+                    <h3>Ready to play Tetris?</h3>
+                    <button id="tetris-start-btn" class="start-btn">Start Game</button>
+                </div>
+                <canvas id="tetris-canvas" width="300" height="600" class="hidden"></canvas>
+                <div class="controls hidden" id="tetris-controls">Arrow keys: Left/Right to move, Down to drop, Up to rotate</div>
+            </div>
+
+            <!-- Platformer Game -->
+            <div id="platformer-game" class="game-container hidden">
+                <div class="game-header">
+                    <h2>Platformer</h2>
+                    <div class="score">Score: <span id="platformer-score">0</span></div>
+                    <button class="back-btn">← Back to Menu</button>
+                </div>
+                <div id="platformer-start-screen" class="start-screen">
+                    <h3>Ready to play Platformer?</h3>
+                    <button id="platformer-start-btn" class="start-btn">Start Game</button>
+                </div>
+                <canvas id="platformer-canvas" width="800" height="400" class="hidden"></canvas>
+                <div class="controls hidden" id="platformer-controls">Arrow keys or A/D to move, Space or W to jump</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">Game Over!</h2>
+            <div class="score-display">
+                <div class="score-item">
+                    <span class="score-label">Your Score:</span>
+                    <span id="modal-score" class="score-value">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">High Score:</span>
+                    <span id="modal-high-score" class="score-value">0</span>
+                </div>
+            </div>
+            <button id="modal-close-btn" class="modal-btn">Continue</button>
+        </div>
+    </div>
+
+    <script src="games.js"></script>
+</body>
+</html>
+
