@@ -166,6 +166,7 @@ canvas {
     border-radius: var(--radius);
     background: #000;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    touch-action: none;
 }
 
 .controls {
@@ -296,14 +297,13 @@ canvas {
 .minesweeper-cell.number-8 { color: #94a3b8; }
 
 @keyframes cellReveal {
-    from { transform: scale(0.85); opacity: 0.3; }
-    to { transform: scale(1); opacity: 1; }
+    from { opacity: 0.3; }
+    to { opacity: 1; }
 }
 
 @keyframes mineExplode {
-    0% { transform: scale(0.5); opacity: 0.4; }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); opacity: 1; }
+    from { opacity: 0.4; }
+    to { opacity: 1; }
 }
 
 /* ====== GAME OVER MODAL ====== */
@@ -311,23 +311,15 @@ canvas {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.75);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    animation: modalFadeIn 0.25s ease;
 }
 
 .modal.hidden {
     display: none;
-}
-
-@keyframes modalFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 .modal-content {
@@ -338,12 +330,6 @@ canvas {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     text-align: center;
     min-width: 300px;
-    animation: modalSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes modalSlideUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-content h2 {
@@ -383,11 +369,16 @@ canvas {
     color: var(--accent);
 }
 
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
 .modal-btn {
-    background: var(--accent);
-    color: #0d1117;
     border: none;
-    padding: 12px 36px;
+    padding: 12px 32px;
     font-size: 1em;
     font-weight: 700;
     border-radius: var(--radius);
@@ -395,10 +386,20 @@ canvas {
     transition: all 0.2s ease;
 }
 
+.modal-btn-primary {
+    background: var(--accent);
+    color: #0d1117;
+}
+
+.modal-btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
 .modal-btn:hover {
     opacity: 0.9;
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.25);
 }
 
 /* ====== START SCREEN ====== */
@@ -452,4 +453,270 @@ canvas {
 
 .hidden {
     display: none !important;
+}
+
+/* ====== MOBILE CONTROLS ====== */
+
+/* Joystick — bottom left */
+.joystick-container {
+    display: none;
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    z-index: 900;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.joystick-base {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: rgba(22, 27, 34, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.joystick-knob {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(88, 166, 255, 0.15);
+    border: 2px solid rgba(88, 166, 255, 0.35);
+    position: absolute;
+    will-change: transform;
+}
+
+.joystick-knob.active {
+    background: rgba(88, 166, 255, 0.3);
+    border-color: rgba(88, 166, 255, 0.6);
+}
+
+/* D-Pad + Action — bottom right */
+.dpad-container {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    flex-direction: row-reverse;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 10px;
+    z-index: 900;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.dpad-container > * {
+    pointer-events: auto;
+}
+
+.dpad-cross {
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 3px;
+}
+
+.dpad-up { grid-column: 2; grid-row: 1; }
+.dpad-left { grid-column: 1; grid-row: 2; }
+.dpad-center { grid-column: 2; grid-row: 2; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-down { grid-column: 2; grid-row: 3; }
+
+.dpad-btn {
+    background: rgba(22, 27, 34, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: rgba(230, 237, 243, 0.5);
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.1s, border-color 0.1s;
+}
+
+.dpad-btn.pressed {
+    background: rgba(88, 166, 255, 0.25);
+    border-color: rgba(88, 166, 255, 0.6);
+    color: var(--accent);
+}
+
+
+/* ====== MOBILE RESPONSIVE ====== */
+@media (max-width: 768px) {
+    body {
+        padding: 6px;
+        align-items: flex-start;
+    }
+
+    .arcade-container {
+        padding: 14px;
+        border-radius: var(--radius);
+    }
+
+    .arcade-header {
+        margin-bottom: 18px;
+    }
+
+    .arcade-header h1 {
+        font-size: 1.5em;
+    }
+
+    .arcade-header p {
+        font-size: 0.85em;
+    }
+
+    .game-selector {
+        gap: 6px;
+        margin-bottom: 18px;
+    }
+
+    .game-btn {
+        padding: 9px 14px;
+        font-size: 0.82em;
+    }
+
+    .game-header {
+        gap: 8px;
+    }
+
+    .game-header h2 {
+        font-size: 1.1em;
+    }
+
+    .score {
+        font-size: 0.82em;
+        padding: 5px 10px;
+    }
+
+    .back-btn {
+        padding: 6px 12px;
+        font-size: 0.78em;
+    }
+
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .controls {
+        display: none;
+    }
+
+    .joystick-container.active {
+        display: block;
+    }
+
+    .dpad-container.active {
+        display: flex;
+    }
+
+    /* Minesweeper mobile */
+    .minesweeper-cell {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+
+    .minesweeper-info-bar {
+        font-size: 0.9em;
+        padding: 8px 12px;
+    }
+
+    /* Start screen mobile */
+    .start-screen {
+        padding: 28px 20px;
+        min-width: unset;
+        width: 100%;
+    }
+
+    .start-btn {
+        padding: 12px 32px;
+        font-size: 0.95em;
+    }
+
+    /* Modal mobile */
+    .modal-content {
+        padding: 28px 20px;
+        min-width: unset;
+        margin: 0 16px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.4em;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 380px) {
+    .game-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .game-btn {
+        text-align: center;
+    }
+
+    .joystick-base {
+        width: 110px;
+        height: 110px;
+    }
+
+    .joystick-knob {
+        width: 44px;
+        height: 44px;
+    }
+
+    .dpad-cross {
+        grid-template-columns: repeat(3, 42px);
+        grid-template-rows: repeat(3, 42px);
+    }
+
+    .dpad-btn {
+        font-size: 0.9em;
+    }
+
+    .dpad-container {
+        gap: 12px;
+        padding: 6px;
+    }
+
+    .minesweeper-cell {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+    }
+}
+
+@media (pointer: coarse) {
+    .joystick-container.active {
+        display: block;
+    }
+
+    .dpad-container.active {
+        display: flex;
+    }
+
+    .controls {
+        display: none;
+    }
 }
