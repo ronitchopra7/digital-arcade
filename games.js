@@ -49,6 +49,21 @@ const SFX = (() => {
     };
 })();
 
+// ==================== OPTION SYSTEM ====================
+function getOption(name, defaultVal) {
+    const el = document.querySelector(`.pill.active[data-option="${name}"]`);
+    return el ? el.dataset.value : defaultVal;
+}
+
+document.addEventListener('click', (e) => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    const group = pill.closest('.option-pills');
+    if (!group) return;
+    group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+});
+
 function stopAllGames() {
     // Cancel all animation frame loops
     if (snakeGame) {
@@ -157,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalCloseBtn) {
         modalCloseBtn.addEventListener('click', () => {
             modal.classList.add('hidden');
-            gamePaused = false;
+            if (lastGameOverName === 'snake') gamePaused = false;
         });
     }
 
@@ -455,7 +470,19 @@ function initSnake() {
     let directionChanged = false;
     let score = 0;
     let lastMoveTime = 0;
-    const moveInterval = 100;
+
+    const speedMap = { chill: 160, normal: 100, fast: 65, insane: 40 };
+    const moveInterval = speedMap[getOption('snake-speed', 'normal')] || 100;
+
+    const styleOpt = getOption('snake-style', 'classic');
+    const hatOpt = getOption('snake-hat', 'none');
+    const snakeColors = {
+        classic: { hue: 145, sat: 72, glow: '#4ade80', headLight: '#86efac', headDark: '#22c55e', tail: '#22c55e' },
+        neon:    { hue: 195, sat: 90, glow: '#38bdf8', headLight: '#7dd3fc', headDark: '#0284c7', tail: '#0284c7' },
+        fire:    { hue: 20,  sat: 85, glow: '#fb923c', headLight: '#fdba74', headDark: '#ea580c', tail: '#ea580c' },
+        rainbow: { hue: 0,   sat: 80, glow: '#f472b6', headLight: '#fda4af', headDark: '#e11d48', tail: '#e11d48' },
+    };
+    const sc = snakeColors[styleOpt] || snakeColors.classic;
     
     let snakeRender = [{x: 10, y: 10}];
     let animationProgress = 0;
@@ -569,7 +596,7 @@ function initSnake() {
     }
     
     function deathEffect() {
-        snake.forEach(s => spawnBurst(s.x, s.y, '#4ade80', 4));
+        snake.forEach(s => spawnBurst(s.x, s.y, sc.glow, 4));
         screenFlash = 12;
         SFX.snakeDie();
     }
@@ -701,8 +728,8 @@ function initSnake() {
             const t = 1 - i / Math.max(1, len - 1);
             const width = gs - 4 - t * 5;
             const lightness = 42 + (1 - t) * 22;
-            
-            ctx.strokeStyle = `hsl(145, 72%, ${lightness}%)`;
+            const hue = styleOpt === 'rainbow' ? (gameTime * 2 + i * 25) % 360 : sc.hue;
+            ctx.strokeStyle = `hsl(${hue}, ${sc.sat}%, ${lightness}%)`;
             ctx.lineWidth = width;
             ctx.beginPath();
             ctx.moveTo((snakeRender[i - 1].x + 0.5) * gs, (snakeRender[i - 1].y + 0.5) * gs);
@@ -714,7 +741,8 @@ function initSnake() {
         if (len > 1) {
             const tail = snakeRender[len - 1];
             const tailR = (gs - 10) / 2;
-            ctx.fillStyle = 'hsl(145, 72%, 42%)';
+            const tailHue = styleOpt === 'rainbow' ? (gameTime * 2 + len * 25) % 360 : sc.hue;
+            ctx.fillStyle = `hsl(${tailHue}, ${sc.sat}%, 42%)`;
             ctx.beginPath();
             ctx.arc((tail.x + 0.5) * gs, (tail.y + 0.5) * gs, tailR, 0, Math.PI * 2);
             ctx.fill();
@@ -725,11 +753,11 @@ function initSnake() {
         const hy = (snakeRender[0].y + 0.5) * gs;
         const hr = gs * 0.47;
         
-        ctx.shadowColor = '#4ade80';
+        ctx.shadowColor = sc.glow;
         ctx.shadowBlur = 14;
         const hGrad = ctx.createRadialGradient(hx - 2, hy - 2, 0, hx, hy, hr);
-        hGrad.addColorStop(0, '#86efac');
-        hGrad.addColorStop(1, '#22c55e');
+        hGrad.addColorStop(0, sc.headLight);
+        hGrad.addColorStop(1, sc.headDark);
         ctx.fillStyle = hGrad;
         ctx.beginPath();
         ctx.arc(hx, hy, hr, 0, Math.PI * 2);
@@ -791,6 +819,53 @@ function initSnake() {
             ctx.moveTo(hx + dx * (hr + tongueLen), hy + dy * (hr + tongueLen));
             ctx.lineTo(hx + dx * (hr + tongueLen + 2) + (dy !== 0 ? -2 : 0), hy + dy * (hr + tongueLen + 2) + (dx !== 0 ? -2 : 0));
             ctx.stroke();
+        }
+        
+        // Hat / accessory
+        if (hatOpt !== 'none') {
+            const hatY = hy - hr - 2;
+            if (hatOpt === 'crown') {
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.moveTo(hx - 6, hatY + 2);
+                ctx.lineTo(hx - 7, hatY - 6);
+                ctx.lineTo(hx - 3, hatY - 2);
+                ctx.lineTo(hx, hatY - 8);
+                ctx.lineTo(hx + 3, hatY - 2);
+                ctx.lineTo(hx + 7, hatY - 6);
+                ctx.lineTo(hx + 6, hatY + 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.arc(hx, hatY - 5, 1.2, 0, Math.PI * 2); ctx.fill();
+            } else if (hatOpt === 'tophat') {
+                ctx.fillStyle = '#1e1e2e';
+                ctx.fillRect(hx - 7, hatY - 1, 14, 3);
+                ctx.fillRect(hx - 5, hatY - 10, 10, 10);
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(hx - 5, hatY - 5, 10, 2);
+            } else if (hatOpt === 'party') {
+                ctx.fillStyle = '#f472b6';
+                ctx.beginPath();
+                ctx.moveTo(hx, hatY - 10);
+                ctx.lineTo(hx - 6, hatY + 2);
+                ctx.lineTo(hx + 6, hatY + 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath(); ctx.arc(hx, hatY - 10, 2, 0, Math.PI * 2); ctx.fill();
+            } else if (hatOpt === 'shades') {
+                const sy = hy - 1;
+                ctx.fillStyle = '#111';
+                ctx.fillRect(hx - 7, sy - 2.5, 6, 5);
+                ctx.fillRect(hx + 1, sy - 2.5, 6, 5);
+                ctx.fillRect(hx - 1, sy - 0.5, 2, 1);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(hx - 7, sy - 2.5, 6, 5);
+                ctx.strokeRect(hx + 1, sy - 2.5, 6, 5);
+            }
         }
         
         ctx.restore();
@@ -944,7 +1019,15 @@ function initPacman() {
     let ghostEatCombo = 0;
     let lastMoveTime = 0;
     let gameTime = 0;
-    const moveInterval = 150;
+
+    const pacDiff = getOption('pacman-diff', 'normal');
+    const pacSettings = {
+        easy:   { interval: 180, frightenDur: 60, ghostSmart: 0.08 },
+        normal: { interval: 150, frightenDur: 40, ghostSmart: 0.15 },
+        hard:   { interval: 115, frightenDur: 22, ghostSmart: 0.25 },
+    };
+    const ps = pacSettings[pacDiff] || pacSettings.normal;
+    const moveInterval = ps.interval;
     
     function isGhostHouse(x, y) {
         return (y === 9 && x >= 8 && x <= 11) || (y === 8 && (x === 9 || x === 10));
@@ -973,12 +1056,6 @@ function initPacman() {
     
     function resetPacman() {
         const finalScore = score;
-        initState();
-        score = 0;
-        gameRunning = true;
-        const el = document.getElementById('pacman-score');
-        if (el) el.textContent = score;
-        generateDots();
         if (finalScore > 0) showGameOver('pacman', finalScore);
     }
     
@@ -1083,7 +1160,7 @@ function initPacman() {
                 score += 50;
                 const el = document.getElementById('pacman-score');
                 if (el) el.textContent = score;
-                frightenedTimer = 40;
+                frightenedTimer = ps.frightenDur;
                 ghostEatCombo = 0;
                 spawnParticles(pacman.x, pacman.y, '#ffffff', 12);
                 addPopup(pacman.x, pacman.y, '+50');
@@ -1099,7 +1176,7 @@ function initPacman() {
             const isFrightened = frightenedTimer > 0;
             if (isFrightened && gameTime % 2 === 0) return;
             
-            if (Math.random() < 0.15) {
+            if (Math.random() < ps.ghostSmart) {
                 const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
                 const valid = dirs.filter(d => {
                     const c = canMove(ghost.x + d[0], ghost.y + d[1]);
@@ -1413,8 +1490,15 @@ function initMinesweeper() {
     const faceBtn = document.getElementById('minesweeper-face');
     const timerEl = document.getElementById('minesweeper-timer');
     const mineCountEl = document.getElementById('mines-count');
-    const size = 16;
-    const mineCount = 40;
+    const mineDiff = getOption('mine-diff', 'intermediate');
+    const mineSettings = {
+        beginner:     { size: 9,  mines: 10 },
+        intermediate: { size: 16, mines: 40 },
+        expert:       { size: 20, mines: 70 },
+    };
+    const ms = mineSettings[mineDiff] || mineSettings.intermediate;
+    const size = ms.size;
+    const mineCount = ms.mines;
     let grid = [];
     let revealed = [];
     let flagged = [];
@@ -1447,7 +1531,9 @@ function initMinesweeper() {
     
     function createBoard() {
         board.innerHTML = '';
-        board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        const cellSize = size <= 9 ? 32 : size <= 16 ? 28 : 24;
+        board.style.gridTemplateColumns = `repeat(${size}, ${cellSize}px)`;
+        board.style.setProperty('--cell-size', cellSize + 'px');
         grid = [];
         revealed = [];
         flagged = [];
@@ -1475,6 +1561,9 @@ function initMinesweeper() {
             for (let x = 0; x < size; x++) {
                 const cell = document.createElement('div');
                 cell.className = 'minesweeper-cell';
+                cell.style.width = cellSize + 'px';
+                cell.style.height = cellSize + 'px';
+                cell.style.fontSize = (cellSize <= 24 ? 10 : 13) + 'px';
                 cell.dataset.x = x;
                 cell.dataset.y = y;
                 
@@ -1716,11 +1805,24 @@ const tetrisPieces = [
 function initTetris() {
     const canvas = document.getElementById('tetris-canvas');
     const ctx = canvas.getContext('2d');
-    const blockSize = 30;
-    const cols = canvas.width / blockSize;
-    const rows = canvas.height / blockSize;
-    
-    // Board stores color strings instead of just 0/1
+
+    const tetrisSpeed = getOption('tetris-speed', 'normal');
+    const tetrisBoard = getOption('tetris-board', 'standard');
+
+    const boardConfigs = {
+        standard: { cols: 10, rows: 20, block: 30 },
+        wide:     { cols: 14, rows: 20, block: 30 },
+        tall:     { cols: 10, rows: 24, block: 25 },
+    };
+    const bc = boardConfigs[tetrisBoard] || boardConfigs.standard;
+    const blockSize = bc.block;
+    const cols = bc.cols;
+    const rows = bc.rows;
+    canvas.width = cols * blockSize;
+    canvas.height = rows * blockSize;
+
+    const baseInterval = { slow: 1200, normal: 1000, fast: 600 }[tetrisSpeed] || 1000;
+
     let board = Array(rows).fill().map(() => Array(cols).fill(0));
     let currentPiece = null;
     let currentColor = '#2196F3';
@@ -1730,14 +1832,14 @@ function initTetris() {
     let lines = 0;
     let level = 1;
     let dropCounter = 0;
-    let dropInterval = 1000;
+    let dropInterval = baseInterval;
     let lastTime = 0;
     let nextPieceType = Math.floor(Math.random() * tetrisPieces.length);
-    let lineClearFlash = 0; // For line-clear animation
+    let lineClearFlash = 0;
     let flashingRows = [];
     
     function getDropInterval() {
-        return Math.max(100, 1000 - (level - 1) * 80);
+        return Math.max(100, baseInterval - (level - 1) * 80);
     }
     
     function spawnPiece() {
@@ -1750,15 +1852,6 @@ function initTetris() {
         
         if (collision()) {
             const finalScore = score;
-            board = Array(rows).fill().map(() => Array(cols).fill(0));
-            score = 0;
-            lines = 0;
-            level = 1;
-            dropInterval = getDropInterval();
-            const tetrisScoreElement = document.getElementById('tetris-score');
-            const tetrisLinesElement = document.getElementById('tetris-lines');
-            if (tetrisScoreElement) tetrisScoreElement.textContent = score;
-            if (tetrisLinesElement) tetrisLinesElement.textContent = lines;
             if (finalScore > 0) {
                 SFX.tetrisDie();
                 showGameOver('tetris', finalScore);
@@ -2096,11 +2189,56 @@ function initPlatformer() {
     const canvas = document.getElementById('platformer-canvas');
     const ctx = canvas.getContext('2d');
     
-    // World constants
-    const WORLD_WIDTH = 9000;
     const GROUND_Y = 370;
     const TILE = 30;
+    let WORLD_WIDTH = 9000;
     
+    const avatarOpt = getOption('plat-color', 'blue');
+    const themeOpt = getOption('plat-theme', 'forest');
+    const startLevel = parseInt(getOption('plat-level', '1'), 10) || 1;
+
+    const avatarColors = {
+        classic: { body: '#E53935', hat: '#1565C0', legs: '#1565C0' },
+        blue:    { body: '#1976D2', hat: '#0D47A1', legs: '#0D47A1' },
+        red:     { body: '#C62828', hat: '#B71C1C', legs: '#8E0000' },
+        green:   { body: '#2E7D32', hat: '#1B5E20', legs: '#1B5E20' },
+        purple:  { body: '#7B1FA2', hat: '#6A1B9A', legs: '#4A148C' },
+        gold:    { body: '#F9A825', hat: '#F57F17', legs: '#E65100' },
+    };
+    const ac = avatarColors[avatarOpt] || avatarColors.classic;
+
+    const themes = {
+        forest: {
+            sky: ['#4A90D9', '#87CEEB', '#B8E6B8'],
+            mountain1: '#8BB8A8', mountain2: '#9FC8B8',
+            trunk: '#5D4037', leaf1: '#4CAF50', leaf2: '#388E3C',
+            dirt: '#8B6914', grass1: '#6ABF4B', grass2: '#4CAF50',
+            platform: '#795548', platformTop: '#8D6E63',
+        },
+        desert: {
+            sky: ['#F4A460', '#FFDEAD', '#FFE4B5'],
+            mountain1: '#C19A6B', mountain2: '#D2B48C',
+            trunk: '#8B4513', leaf1: '#9ACD32', leaf2: '#6B8E23',
+            dirt: '#C2A64E', grass1: '#DAA520', grass2: '#B8860B',
+            platform: '#A0522D', platformTop: '#CD853F',
+        },
+        ice: {
+            sky: ['#1a1a3e', '#3A5F8A', '#87CEEB'],
+            mountain1: '#B0C4DE', mountain2: '#DCEEF8',
+            trunk: '#708090', leaf1: '#ADD8E6', leaf2: '#87CEEB',
+            dirt: '#708090', grass1: '#B0E0E6', grass2: '#87CEEB',
+            platform: '#5F9EA0', platformTop: '#B0E0E6',
+        },
+        night: {
+            sky: ['#0B0E17', '#141B2D', '#1C2541'],
+            mountain1: '#1F2937', mountain2: '#374151',
+            trunk: '#4B5563', leaf1: '#065F46', leaf2: '#064E3B',
+            dirt: '#292524', grass1: '#365314', grass2: '#1a2e05',
+            platform: '#44403C', platformTop: '#57534E',
+        },
+    };
+    const th = themes[themeOpt] || themes.forest;
+
     const player = {
         x: 80, y: GROUND_Y - 32,
         width: 28, height: 32,
@@ -2116,158 +2254,213 @@ function initPlatformer() {
     let deathTimeout = null;
     let keys = {};
     
-    // ---- Level Generation ----
-    // Ground segments — pits are the 100px gaps between them
-    // Seg0: 0-1100 | Pit1: 1100-1200 | Seg1: 1200-2100 | Pit2: 2100-2200
-    // Seg2: 2200-3000 | Pit3: 3000-3100 | Seg3: 3100-4000 | Pit4: 4000-4100
-    // Seg4: 4100-5100 | Pit5: 5100-5200 | Seg5: 5200-6000 | Pit6: 6000-6100
-    // Seg6: 6100-7000 | Pit7: 7000-7100 | Seg7: 7100-8000 | Pit8: 8000-8100
-    // Seg8: 8100-9000
-    const groundSegments = [
-        {x: 0, w: 1100},
-        {x: 1200, w: 900},
-        {x: 2200, w: 800},
-        {x: 3100, w: 900},
-        {x: 4100, w: 1000},
-        {x: 5200, w: 800},
-        {x: 6100, w: 900},
-        {x: 7100, w: 900},
-        {x: 8100, w: 900}
-    ];
-    
-    const platforms = [
-        // Section 1 (Seg0: 0-1100)
-        {x: 250, y: 310, w: 100},
-        {x: 550, y: 270, w: 80},
-        {x: 850, y: 300, w: 100},
-        // Bridge over pit 1 (1100-1200)
-        {x: 1120, y: 320, w: 60},
-        // Section 2 (Seg1: 1200-2100)
-        {x: 1350, y: 300, w: 100},
-        {x: 1600, y: 260, w: 80},
-        {x: 1850, y: 300, w: 100},
-        // Bridge over pit 2 (2100-2200)
-        {x: 2120, y: 320, w: 60},
-        // Section 3 — staircase (Seg2: 2200-3000)
-        {x: 2350, y: 310, w: 80},
-        {x: 2500, y: 270, w: 80},
-        {x: 2650, y: 240, w: 80},
-        {x: 2850, y: 290, w: 80},
-        // Bridge over pit 3 (3000-3100)
-        {x: 3020, y: 320, w: 60},
-        // Section 4 (Seg3: 3100-4000)
-        {x: 3250, y: 290, w: 100},
-        {x: 3500, y: 260, w: 80},
-        {x: 3750, y: 290, w: 100},
-        // Bridge over pit 4 (4000-4100)
-        {x: 4020, y: 320, w: 60},
-        // Section 5 (Seg4: 4100-5100)
-        {x: 4250, y: 300, w: 120},
-        {x: 4550, y: 260, w: 80},
-        {x: 4850, y: 300, w: 100},
-        // Bridge over pit 5 (5100-5200)
-        {x: 5120, y: 320, w: 60},
-        // Section 6 (Seg5: 5200-6000)
-        {x: 5350, y: 290, w: 100},
-        {x: 5600, y: 250, w: 80},
-        {x: 5850, y: 300, w: 100},
-        // Bridge over pit 6 (6000-6100)
-        {x: 6020, y: 320, w: 60},
-        // Section 7 (Seg6: 6100-7000)
-        {x: 6250, y: 280, w: 100},
-        {x: 6500, y: 250, w: 80},
-        {x: 6750, y: 280, w: 100},
-        // Bridge over pit 7 (7000-7100)
-        {x: 7020, y: 320, w: 60},
-        // Section 8 (Seg7: 7100-8000)
-        {x: 7250, y: 290, w: 100},
-        {x: 7500, y: 260, w: 80},
-        {x: 7800, y: 300, w: 100},
-        // Bridge over pit 8 (8000-8100)
-        {x: 8020, y: 320, w: 60},
-        // Section 9 — final stretch (Seg8: 8100-9000)
-        {x: 8250, y: 280, w: 100},
-        {x: 8500, y: 250, w: 80},
-        {x: 8700, y: 280, w: 120}
-    ];
-    
-    const movingPlatformsInit = [
-        {x: 500, y: 280, w: 70, dx: 1, dy: 0, minX: 400, maxX: 600},
-        {x: 2400, y: 260, w: 70, dx: 0, dy: 1, minY: 250, maxY: 330},
-        {x: 4300, y: 270, w: 80, dx: 1, dy: 0, minX: 4200, maxX: 4500},
-        {x: 6300, y: 260, w: 70, dx: 0, dy: 1, minY: 250, maxY: 330},
-        {x: 7400, y: 280, w: 80, dx: 1, dy: 0, minX: 7300, maxX: 7500},
-        {x: 8500, y: 270, w: 70, dx: 0, dy: -1, minY: 230, maxY: 330}
-    ];
-    let movingPlatforms = [];
-    
-    const enemiesInit = [
-        // Walkers — patrol bounds verified within ground segments (25px width buffer)
-        {x: 350, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 200, maxX: 650, type: 'walker'},
-        {x: 850, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 700, maxX: 1000, type: 'walker'},
-        {x: 1450, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 1300, maxX: 1650, type: 'walker'},
-        {x: 1900, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 1750, maxX: 2050, type: 'walker'},
-        {x: 2500, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 2300, maxX: 2700, type: 'walker'},
-        {x: 3400, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 3200, maxX: 3600, type: 'walker'},
-        {x: 3800, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 3650, maxX: 3950, type: 'walker'},
-        {x: 4400, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 4200, maxX: 4600, type: 'walker'},
-        {x: 4900, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 4700, maxX: 5050, type: 'walker'},
-        {x: 5500, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 5300, maxX: 5700, type: 'walker'},
-        {x: 6400, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 6200, maxX: 6600, type: 'walker'},
-        {x: 6850, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 6650, maxX: 6950, type: 'walker'},
-        {x: 7500, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 7200, maxX: 7700, type: 'walker'},
-        {x: 8400, y: GROUND_Y - 25, w: 25, h: 25, dx: 1, minX: 8200, maxX: 8600, type: 'walker'},
-        {x: 8750, y: GROUND_Y - 25, w: 25, h: 25, dx: -1, minX: 8550, maxX: 8850, type: 'walker'},
-        // Spikes — every x verified to be within a ground segment
-        {x: 600, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 600, maxX: 600, type: 'spike'},
-        {x: 1700, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 1700, maxX: 1700, type: 'spike'},
-        {x: 2800, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 2800, maxX: 2800, type: 'spike'},
-        {x: 3600, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 3600, maxX: 3600, type: 'spike'},
-        {x: 4600, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 4600, maxX: 4600, type: 'spike'},
-        {x: 5800, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 5800, maxX: 5800, type: 'spike'},
-        {x: 6600, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 6600, maxX: 6600, type: 'spike'},
-        {x: 7700, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 7700, maxX: 7700, type: 'spike'},
-        {x: 8600, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: 8600, maxX: 8600, type: 'spike'}
-    ];
-    let enemies = [];
-    
-    // Coins — evenly spaced ~300px apart, all on solid ground
-    const coinsInit = [];
-    [150, 450, 750, 1000,
-     1300, 1600, 1900,
-     2300, 2600, 2900,
-     3200, 3500, 3800,
-     4200, 4500, 4800,
-     5300, 5600, 5900,
-     6200, 6500, 6800,
-     7200, 7500, 7800,
-     8200, 8500, 8800].forEach(cx => {
-        coinsInit.push({x: cx, y: GROUND_Y - 40, collected: false, animFrame: Math.random() * 60 | 0});
-    });
-    // Platform coins — only on platforms the player can stand on
-    platforms.forEach((p, i) => {
-        if (i % 3 === 0) {
-            coinsInit.push({x: p.x + p.w / 2 - 10, y: p.y - 30, collected: false, animFrame: Math.random() * 60 | 0});
+    // ---- Multi-Level System ----
+    let currentLevel = 1;
+    const MAX_LEVELS = 3;
+    let levelTransition = 0;
+
+    let groundSegments, platforms, movingPlatformsInit, movingPlatforms;
+    let enemiesInit, enemies, coinsInit, coins;
+    let springsInit, springs;
+    let crumblingInit, crumblingPlatforms;
+    let fallingInit, fallingPlatforms;
+    let fireballSources, fireballs;
+    let goal;
+    let clouds, bgMountains, bgTrees;
+
+    function makeCoins(xPositions, plats) {
+        const c = [];
+        xPositions.forEach(cx => c.push({x: cx, y: GROUND_Y - 40, collected: false, animFrame: Math.random() * 60 | 0}));
+        plats.forEach((p, i) => { if (i % 3 === 0) c.push({x: p.x + p.w / 2 - 10, y: p.y - 30, collected: false, animFrame: Math.random() * 60 | 0}); });
+        return c;
+    }
+    function w(x, dx, mn, mx) { return {x, y: GROUND_Y - 25, w: 25, h: 25, dx, minX: mn, maxX: mx, type: 'walker'}; }
+    function sp(x) { return {x, y: GROUND_Y - 15, w: 30, h: 15, dx: 0, minX: x, maxX: x, type: 'spike'}; }
+
+    function generateBackground() {
+        clouds = [];
+        for (let i = 0; i < 30; i++) clouds.push({x: Math.random() * WORLD_WIDTH, y: 30 + Math.random() * 100, size: 25 + Math.random() * 35});
+        bgMountains = [];
+        for (let i = 0; i < Math.ceil(WORLD_WIDTH / 420); i++) bgMountains.push({x: i * 420, w: 300 + Math.random() * 200, h: 80 + Math.random() * 100});
+        bgTrees = [];
+        for (let i = 0; i < Math.ceil(WORLD_WIDTH / 150); i++) bgTrees.push({x: 80 + Math.random() * (WORLD_WIDTH - 160), h: 40 + Math.random() * 40});
+    }
+
+    function loadLevel(num) {
+        if (num === 1) {
+            // --- LEVEL 1: Classic ---
+            WORLD_WIDTH = 9000;
+            groundSegments = [
+                {x:0,w:1100},{x:1200,w:900},{x:2200,w:800},{x:3100,w:900},
+                {x:4100,w:1000},{x:5200,w:800},{x:6100,w:900},{x:7100,w:900},{x:8100,w:900}
+            ];
+            platforms = [
+                {x:250,y:310,w:100},{x:550,y:270,w:80},{x:850,y:300,w:100},
+                {x:1120,y:320,w:60},
+                {x:1350,y:300,w:100},{x:1600,y:260,w:80},{x:1850,y:300,w:100},
+                {x:2120,y:320,w:60},
+                {x:2350,y:310,w:80},{x:2500,y:270,w:80},{x:2650,y:240,w:80},{x:2850,y:290,w:80},
+                {x:3020,y:320,w:60},
+                {x:3250,y:290,w:100},{x:3500,y:260,w:80},{x:3750,y:290,w:100},
+                {x:4020,y:320,w:60},
+                {x:4250,y:300,w:120},{x:4550,y:260,w:80},{x:4850,y:300,w:100},
+                {x:5120,y:320,w:60},
+                {x:5350,y:290,w:100},{x:5600,y:250,w:80},{x:5850,y:300,w:100},
+                {x:6020,y:320,w:60},
+                {x:6250,y:280,w:100},{x:6500,y:250,w:80},{x:6750,y:280,w:100},
+                {x:7020,y:320,w:60},
+                {x:7250,y:290,w:100},{x:7500,y:260,w:80},{x:7800,y:300,w:100},
+                {x:8020,y:320,w:60},
+                {x:8250,y:280,w:100},{x:8500,y:250,w:80},{x:8700,y:280,w:120}
+            ];
+            movingPlatformsInit = [
+                {x:500,y:280,w:70,dx:1,dy:0,minX:400,maxX:600},
+                {x:2400,y:260,w:70,dx:0,dy:1,minY:250,maxY:330},
+                {x:4300,y:270,w:80,dx:1,dy:0,minX:4200,maxX:4500},
+                {x:6300,y:260,w:70,dx:0,dy:1,minY:250,maxY:330},
+                {x:7400,y:280,w:80,dx:1,dy:0,minX:7300,maxX:7500},
+                {x:8500,y:270,w:70,dx:0,dy:-1,minY:230,maxY:330}
+            ];
+            enemiesInit = [
+                w(350,1,200,650),w(850,-1,700,1000),w(1450,-1,1300,1650),w(1900,1,1750,2050),
+                w(2500,1,2300,2700),w(3400,-1,3200,3600),w(3800,1,3650,3950),
+                w(4400,1,4200,4600),w(4900,-1,4700,5050),w(5500,1,5300,5700),
+                w(6400,-1,6200,6600),w(6850,1,6650,6950),w(7500,-1,7200,7700),
+                w(8400,1,8200,8600),w(8750,-1,8550,8850),
+                sp(600),sp(1700),sp(2800),sp(3600),sp(4600),sp(5800),sp(6600),sp(7700),sp(8600)
+            ];
+            coinsInit = makeCoins([150,450,750,1000,1300,1600,1900,2300,2600,2900,
+                3200,3500,3800,4200,4500,4800,5300,5600,5900,
+                6200,6500,6800,7200,7500,7800,8200,8500,8800], platforms);
+            springsInit = [];
+            crumblingInit = [];
+            fallingInit = [];
+            fireballSources = [];
         }
-    });
-    let coins = [];
-    
-    const goal = {x: WORLD_WIDTH - 150, y: GROUND_Y - 60, w: 30, h: 60, reached: false};
-    
-    const clouds = [];
-    for (let i = 0; i < 30; i++) {
-        clouds.push({x: Math.random() * WORLD_WIDTH, y: 30 + Math.random() * 100, size: 25 + Math.random() * 35});
-    }
-    const bgMountains = [];
-    for (let i = 0; i < 22; i++) {
-        bgMountains.push({x: i * 450, w: 300 + Math.random() * 200, h: 80 + Math.random() * 100});
-    }
-    const bgTrees = [];
-    for (let i = 0; i < 60; i++) {
-        bgTrees.push({x: 100 + Math.random() * (WORLD_WIDTH - 200), h: 40 + Math.random() * 40});
+
+        else if (num === 2) {
+            // --- LEVEL 2: Springs & Crumbling Platforms ---
+            WORLD_WIDTH = 7000;
+            groundSegments = [
+                {x:0,w:950},{x:1070,w:830},{x:2020,w:780},{x:2920,w:780},
+                {x:3820,w:780},{x:4720,w:780},{x:5620,w:1380}
+            ];
+            platforms = [
+                {x:200,y:310,w:100},{x:500,y:280,w:80},{x:750,y:300,w:100},
+                {x:1150,y:290,w:100},{x:1400,y:200,w:90},{x:1650,y:280,w:90},
+                {x:2100,y:300,w:100},{x:2400,y:210,w:90},{x:2650,y:290,w:80},
+                {x:3000,y:280,w:100},{x:3250,y:240,w:80},{x:3500,y:300,w:100},
+                {x:3900,y:290,w:100},{x:4150,y:200,w:90},{x:4400,y:280,w:80},
+                {x:4800,y:300,w:100},{x:5100,y:210,w:90},{x:5350,y:290,w:80},
+                {x:5700,y:280,w:100},{x:5950,y:250,w:80},{x:6200,y:280,w:100},
+                {x:6500,y:260,w:80},{x:6750,y:290,w:100}
+            ];
+            movingPlatformsInit = [
+                {x:600,y:260,w:70,dx:1,dy:0,minX:500,maxX:700},
+                {x:3300,y:260,w:70,dx:0,dy:1,minY:240,maxY:330},
+                {x:5000,y:270,w:80,dx:1,dy:0,minX:4900,maxX:5100},
+                {x:6400,y:260,w:70,dx:0,dy:1,minY:240,maxY:330}
+            ];
+            enemiesInit = [
+                w(300,1,100,600),w(800,-1,650,920),
+                w(1250,1,1100,1500),w(1750,-1,1550,1870),
+                w(2300,1,2050,2500),w(2700,-1,2500,2770),
+                w(3100,-1,2950,3300),w(3550,1,3400,3670),
+                w(4000,1,3850,4200),w(4500,-1,4350,4570),
+                w(4900,1,4750,5100),w(5400,-1,5250,5470),
+                w(5800,1,5650,6000),w(6300,-1,6100,6500),w(6800,1,6600,6970),
+                sp(450),sp(1600),sp(2550),sp(3400),sp(4350),sp(5250),sp(6650)
+            ];
+            // Springs on ground near tall platforms (power = super jump velocity)
+            springsInit = [
+                {x:1380,y:GROUND_Y-15,w:22,h:15,power:-20},
+                {x:2380,y:GROUND_Y-15,w:22,h:15,power:-20},
+                {x:4130,y:GROUND_Y-15,w:22,h:15,power:-20},
+                {x:5080,y:GROUND_Y-15,w:22,h:15,power:-20}
+            ];
+            // Crumbling bridges — only way across some pits
+            crumblingInit = [
+                {x:960,y:325,w:90,h:12},
+                {x:2830,y:325,w:90,h:12},
+                {x:4630,y:325,w:90,h:12}
+            ];
+            fallingInit = [];
+            fireballSources = [];
+            coinsInit = makeCoins([150,400,700,1150,1450,1750,2100,2400,2700,
+                3050,3350,3600,3900,4200,4500,4800,5100,5400,
+                5700,6000,6300,6600,6850], platforms);
+            // Bonus coins on high spring-only platforms
+            [1400,2400,4150,5100].forEach(sx => coinsInit.push({x:sx,y:170,collected:false,animFrame:Math.random()*60|0}));
+        }
+
+        else if (num === 3) {
+            // --- LEVEL 3: Falling Platforms & Fireballs ---
+            WORLD_WIDTH = 8000;
+            groundSegments = [
+                {x:0,w:850},{x:1000,w:700},{x:1850,w:650},{x:2650,w:700},
+                {x:3500,w:700},{x:4350,w:700},{x:5200,w:650},{x:6000,w:2000}
+            ];
+            platforms = [
+                {x:200,y:310,w:80},{x:450,y:260,w:70},{x:700,y:300,w:80},
+                {x:1080,y:290,w:90},{x:1300,y:240,w:70},{x:1500,y:280,w:80},
+                {x:1930,y:300,w:80},{x:2150,y:250,w:70},{x:2350,y:280,w:80},
+                {x:2730,y:290,w:80},{x:2950,y:240,w:70},{x:3150,y:280,w:80},
+                {x:3580,y:300,w:80},{x:3800,y:250,w:70},{x:4000,y:280,w:80},
+                {x:4430,y:290,w:80},{x:4650,y:240,w:70},{x:4850,y:280,w:80},
+                {x:5280,y:300,w:80},{x:5500,y:250,w:70},{x:5700,y:280,w:80},
+                {x:6100,y:280,w:100},{x:6400,y:250,w:80},{x:6700,y:220,w:80},
+                {x:7000,y:260,w:100},{x:7300,y:240,w:80},{x:7600,y:280,w:100}
+            ];
+            movingPlatformsInit = [
+                {x:1350,y:260,w:70,dx:1,dy:0,minX:1250,maxX:1450},
+                {x:3000,y:260,w:70,dx:0,dy:1,minY:230,maxY:320},
+                {x:4700,y:250,w:80,dx:1,dy:0,minX:4600,maxX:4800},
+                {x:6500,y:260,w:70,dx:0,dy:1,minY:230,maxY:320},
+                {x:7400,y:270,w:80,dx:1,dy:0,minX:7300,maxX:7500}
+            ];
+            enemiesInit = [
+                w(300,1,100,550),w(700,-1,550,820),
+                w(1150,1,1030,1350),w(1550,-1,1400,1670),
+                w(2050,1,1880,2250),w(2400,-1,2250,2470),
+                w(2800,1,2680,3000),w(3200,-1,3050,3320),
+                w(3650,1,3530,3850),w(4050,-1,3900,4170),
+                w(4500,1,4380,4700),w(4900,-1,4750,5020),
+                w(5350,1,5230,5550),w(6200,-1,6030,6400),
+                w(6600,1,6400,6800),w(7100,-1,6900,7300),w(7500,1,7300,7700),
+                sp(500),sp(1250),sp(2200),sp(3100),sp(3900),sp(4600),sp(5500),
+                sp(6500),sp(7200),sp(7650)
+            ];
+            springsInit = [];
+            crumblingInit = [];
+            // Falling bridges — they drop when you step on them
+            fallingInit = [
+                {x:870,y:320,w:100,h:12},
+                {x:1770,y:320,w:80,h:12},
+                {x:2570,y:320,w:80,h:12},
+                {x:3420,y:320,w:80,h:12},
+                {x:4270,y:320,w:80,h:12},
+                {x:5120,y:320,w:80,h:12},
+                {x:5920,y:320,w:80,h:12}
+            ];
+            // Fireball launchers {x, y, dir, interval in frames}
+            fireballSources = [
+                {x:1100,y:310,dir:1,interval:110,timer:0},
+                {x:2650,y:300,dir:-1,interval:100,timer:50},
+                {x:3500,y:310,dir:1,interval:90,timer:0},
+                {x:5200,y:300,dir:-1,interval:95,timer:30},
+                {x:6700,y:310,dir:1,interval:85,timer:0}
+            ];
+            coinsInit = makeCoins([150,400,650,1050,1350,1600,1900,2200,2450,
+                2700,3000,3250,3550,3850,4100,4400,4700,4950,
+                5250,5550,5800,6100,6400,6700,7000,7300,7600,7850], platforms);
+        }
+
+        goal = {x: WORLD_WIDTH - 150, y: GROUND_Y - 60, w: 30, h: 60, reached: false};
+        generateBackground();
     }
     
     function resetLevel() {
+        loadLevel(currentLevel);
         player.x = 80;
         player.y = GROUND_Y - 32;
         player.vx = 0;
@@ -2279,21 +2472,23 @@ function initPlatformer() {
         movingPlatforms = movingPlatformsInit.map(p => ({...p}));
         enemies = enemiesInit.map(e => ({...e, startX: e.x}));
         coins = coinsInit.map(c => ({...c, collected: false}));
+        springs = (springsInit || []).map(s => ({...s}));
+        crumblingPlatforms = (crumblingInit || []).map(c => ({...c, timer: 0, visible: true, respawnTimer: 0}));
+        fallingPlatforms = (fallingInit || []).map(f => ({...f, falling: false, vy: 0, origY: f.y, respawnTimer: 0, gone: false}));
+        fireballs = [];
+        fireballSources = (fireballSources || []).map(s => ({...s}));
         goal.reached = false;
+        levelTransition = 0;
     }
     
     function die() {
-        if (player.dead) return;
+        if (player.dead || goal.reached) return;
         player.dead = true;
         SFX.platDie();
         const finalScore = score;
         
         deathTimeout = setTimeout(() => {
             deathTimeout = null;
-            score = 0;
-            const el = document.getElementById('platformer-score');
-            if (el) el.textContent = score;
-            resetLevel();
             if (finalScore > 0) {
                 showGameOver('platformer', finalScore);
             }
@@ -2387,6 +2582,88 @@ function initPlatformer() {
                 }
             });
             
+            // Springs — bounce player high
+            springs.forEach(s => {
+                if (player.x + player.width > s.x && player.x < s.x + s.w &&
+                    player.y + player.height >= s.y && player.y + player.height < s.y + s.h + 8 && player.vy >= 0) {
+                    player.vy = s.power;
+                    player.onGround = false;
+                    SFX.jump();
+                }
+            });
+
+            // Crumbling platforms
+            crumblingPlatforms.forEach(cp => {
+                if (!cp.visible) {
+                    cp.respawnTimer++;
+                    if (cp.respawnTimer > 200) { cp.visible = true; cp.timer = 0; cp.respawnTimer = 0; }
+                    return;
+                }
+                const onIt = player.x + player.width > cp.x && player.x < cp.x + cp.w &&
+                    player.y + player.height >= cp.y && player.y + player.height < cp.y + cp.h + 8 && player.vy >= 0;
+                if (onIt) {
+                    player.y = cp.y - player.height;
+                    player.vy = 0;
+                    player.onGround = true;
+                    cp.timer++;
+                    if (cp.timer > 70) { cp.visible = false; }
+                } else if (cp.timer > 0 && cp.timer < 70) {
+                    cp.timer += 0.5;
+                }
+            });
+
+            // Falling platforms
+            fallingPlatforms.forEach(fp => {
+                if (fp.gone) {
+                    fp.respawnTimer++;
+                    if (fp.respawnTimer > 200) { fp.y = fp.origY; fp.falling = false; fp.vy = 0; fp.gone = false; fp.respawnTimer = 0; }
+                    return;
+                }
+                if (fp.falling) {
+                    fp.vy += 0.3;
+                    fp.y += fp.vy;
+                    if (fp.y > canvas.height + 50) { fp.gone = true; }
+                }
+                if (!fp.falling) {
+                    const onIt = player.x + player.width > fp.x && player.x < fp.x + fp.w &&
+                        player.y + player.height >= fp.y && player.y + player.height < fp.y + fp.h + 8 && player.vy >= 0;
+                    if (onIt) {
+                        player.y = fp.y - player.height;
+                        player.vy = 0;
+                        player.onGround = true;
+                        fp.falling = true; fp.vy = 0;
+                    }
+                } else if (!fp.gone) {
+                    if (player.x + player.width > fp.x && player.x < fp.x + fp.w &&
+                        player.y + player.height >= fp.y && player.y + player.height < fp.y + fp.h + 14 && player.vy >= 0) {
+                        player.y = fp.y - player.height;
+                        player.vy = fp.vy;
+                        player.onGround = true;
+                    }
+                }
+            });
+
+            // Fireballs
+            fireballSources.forEach(src => {
+                src.timer++;
+                if (src.timer >= src.interval) {
+                    src.timer = 0;
+                    fireballs.push({x: src.x, y: src.y, vx: src.dir * 3.5, size: 7, life: 0});
+                }
+            });
+            for (let i = fireballs.length - 1; i >= 0; i--) {
+                const fb = fireballs[i];
+                fb.x += fb.vx;
+                fb.life++;
+                if (fb.life > 300 || fb.x < camera.x - 50 || fb.x > camera.x + canvas.width + 50) {
+                    fireballs.splice(i, 1); continue;
+                }
+                if (player.x + player.width > fb.x - fb.size && player.x < fb.x + fb.size &&
+                    player.y + player.height > fb.y - fb.size && player.y < fb.y + fb.size) {
+                    die();
+                }
+            }
+
             // Enemy update & collision
             enemies.forEach(e => {
                 if (e.dx !== 0) {
@@ -2431,15 +2708,24 @@ function initPlatformer() {
                 player.y + player.height > goal.y && player.y < goal.y + goal.h) {
                 goal.reached = true;
                 SFX.goal();
-                const finalScore = score;
-                deathTimeout = setTimeout(() => {
-                    deathTimeout = null;
-                    showGameOver('platformer', finalScore);
-                    score = 0;
+                if (currentLevel < MAX_LEVELS) {
+                    score += 25;
                     const el = document.getElementById('platformer-score');
                     if (el) el.textContent = score;
-                    resetLevel();
-                }, 1000);
+                    levelTransition = 120;
+                    deathTimeout = setTimeout(() => {
+                        deathTimeout = null;
+                        currentLevel++;
+                        resetLevel();
+                    }, 2000);
+                } else {
+                    score += 50;
+                    const finalScore = score;
+                    deathTimeout = setTimeout(() => {
+                        deathTimeout = null;
+                        showGameOver('platformer', finalScore);
+                    }, 1500);
+                }
             }
             
             // Fall off world
@@ -2468,14 +2754,14 @@ function initPlatformer() {
         
         // Sky gradient
         const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        skyGrad.addColorStop(0, '#4A90D9');
-        skyGrad.addColorStop(0.5, '#87CEEB');
-        skyGrad.addColorStop(1, '#B8E6B8');
+        skyGrad.addColorStop(0, th.sky[0]);
+        skyGrad.addColorStop(0.5, th.sky[1]);
+        skyGrad.addColorStop(1, th.sky[2]);
         ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         // Background mountains (parallax)
-        ctx.fillStyle = '#8BB8A8';
+        ctx.fillStyle = th.mountain1;
         bgMountains.forEach(m => {
             const mx = m.x - cx * 0.2;
             ctx.beginPath();
@@ -2484,7 +2770,7 @@ function initPlatformer() {
             ctx.lineTo(mx + m.w, GROUND_Y);
             ctx.fill();
         });
-        ctx.fillStyle = '#9FC8B8';
+        ctx.fillStyle = th.mountain2;
         bgMountains.forEach(m => {
             const mx = m.x + 100 - cx * 0.3;
             ctx.beginPath();
@@ -2499,14 +2785,13 @@ function initPlatformer() {
             const tx = t.x - cx * 0.5;
             if (tx > -50 && tx < canvas.width + 50) {
                 // Trunk
-                ctx.fillStyle = '#5D4037';
+                ctx.fillStyle = th.trunk;
                 ctx.fillRect(tx - 3, GROUND_Y - t.h, 6, t.h);
-                // Leaves
-                ctx.fillStyle = '#4CAF50';
+                ctx.fillStyle = th.leaf1;
                 ctx.beginPath();
                 ctx.arc(tx, GROUND_Y - t.h - 8, 14, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.fillStyle = '#388E3C';
+                ctx.fillStyle = th.leaf2;
                 ctx.beginPath();
                 ctx.arc(tx + 5, GROUND_Y - t.h - 3, 10, 0, Math.PI * 2);
                 ctx.fill();
@@ -2533,12 +2818,11 @@ function initPlatformer() {
             const sx = seg.x - cx;
             if (sx + seg.w > 0 && sx < canvas.width) {
                 // Dirt
-                ctx.fillStyle = '#8B6914';
+                ctx.fillStyle = th.dirt;
                 ctx.fillRect(sx, GROUND_Y, seg.w, canvas.height - GROUND_Y);
-                // Grass layer
                 const grassGrad = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 8);
-                grassGrad.addColorStop(0, '#6ABF4B');
-                grassGrad.addColorStop(1, '#4CAF50');
+                grassGrad.addColorStop(0, th.grass1);
+                grassGrad.addColorStop(1, th.grass2);
                 ctx.fillStyle = grassGrad;
                 ctx.fillRect(sx, GROUND_Y, seg.w, 8);
                 // Dirt texture lines
@@ -2562,8 +2846,8 @@ function initPlatformer() {
                 ctx.fillRect(px + 3, p.y + 3, p.w, 15);
                 // Platform body
                 const pGrad = ctx.createLinearGradient(0, p.y, 0, p.y + 15);
-                pGrad.addColorStop(0, '#A0522D');
-                pGrad.addColorStop(1, '#6B3410');
+                pGrad.addColorStop(0, th.platformTop);
+                pGrad.addColorStop(1, th.platform);
                 ctx.fillStyle = pGrad;
                 ctx.fillRect(px, p.y, p.w, 15);
                 // Highlight
@@ -2600,6 +2884,107 @@ function initPlatformer() {
             }
         });
         
+        // Springs
+        springs.forEach(s => {
+            const sx = s.x - cx;
+            if (sx > -30 && sx < canvas.width + 30) {
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(sx + 2, s.y + 8, s.w - 4, 7);
+                ctx.fillStyle = '#66BB6A';
+                ctx.beginPath();
+                ctx.arc(sx + s.w / 2, s.y + 6, s.w / 2 + 2, Math.PI, 0);
+                ctx.fill();
+                ctx.strokeStyle = '#2E7D32';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 3; i++) {
+                    const coilY = s.y + 10 + i * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(sx + 4, coilY);
+                    ctx.lineTo(sx + s.w - 4, coilY);
+                    ctx.stroke();
+                }
+            }
+        });
+
+        // Crumbling platforms
+        crumblingPlatforms.forEach(cp => {
+            if (!cp.visible) return;
+            const px = cp.x - cx;
+            if (px + cp.w > -10 && px < canvas.width + 10) {
+                const shake = cp.timer > 30 ? (Math.random() - 0.5) * (cp.timer / 15) : 0;
+                const alpha = cp.timer > 50 ? Math.max(0.2, 1 - (cp.timer - 50) / 20) : 1;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(px + 2 + shake, cp.y + 2, cp.w, cp.h);
+                ctx.fillStyle = '#A1887F';
+                ctx.fillRect(px + shake, cp.y, cp.w, cp.h);
+                ctx.fillStyle = '#8D6E63';
+                for (let i = 0; i < cp.w; i += 18) {
+                    ctx.fillRect(px + i + shake, cp.y, 1, cp.h);
+                }
+                ctx.strokeStyle = '#6D4C41';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.strokeRect(px + shake, cp.y, cp.w, cp.h);
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 1;
+            }
+        });
+
+        // Falling platforms
+        fallingPlatforms.forEach(fp => {
+            if (fp.gone) return;
+            const px = fp.x - cx;
+            if (px + fp.w > -10 && px < canvas.width + 10) {
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(px + 2, fp.y + 2, fp.w, fp.h);
+                const warn = fp.falling ? '#EF5350' : '#FFAB91';
+                ctx.fillStyle = warn;
+                ctx.fillRect(px, fp.y, fp.w, fp.h);
+                ctx.fillStyle = '#FF7043';
+                ctx.fillRect(px, fp.y, fp.w, 3);
+                if (!fp.falling) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('!', px + fp.w / 2, fp.y + fp.h - 1);
+                }
+            }
+        });
+
+        // Fireballs
+        fireballs.forEach(fb => {
+            const fx = fb.x - cx;
+            if (fx > -20 && fx < canvas.width + 20) {
+                const flicker = Math.sin(fb.life * 0.5) * 2;
+                ctx.fillStyle = '#FF5722';
+                ctx.beginPath();
+                ctx.arc(fx, fb.y, fb.size + flicker, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFAB40';
+                ctx.beginPath();
+                ctx.arc(fx, fb.y, fb.size * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFF9C4';
+                ctx.beginPath();
+                ctx.arc(fx, fb.y, fb.size * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        // Fireball launchers
+        (fireballSources || []).forEach(src => {
+            const lx = src.x - cx;
+            if (lx > -20 && lx < canvas.width + 20) {
+                ctx.fillStyle = '#555';
+                ctx.fillRect(lx - 6, src.y - 8, 12, 16);
+                ctx.fillStyle = '#FF5722';
+                ctx.beginPath();
+                ctx.arc(lx, src.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
         // Enemies
         enemies.forEach(e => {
             if (e.h <= 0) return; // Squished
@@ -2737,8 +3122,7 @@ function initPlatformer() {
                 ctx.fill();
             }
             
-            // Body
-            ctx.fillStyle = '#E53935';
+            ctx.fillStyle = ac.body;
             ctx.fillRect(px + 4, py + 12, player.width - 8, player.height - 12);
             
             // Head
@@ -2747,8 +3131,7 @@ function initPlatformer() {
             ctx.arc(px + player.width / 2, py + 10, 10, 0, Math.PI * 2);
             ctx.fill();
             
-            // Hat
-            ctx.fillStyle = '#1565C0';
+            ctx.fillStyle = ac.hat;
             ctx.beginPath();
             ctx.arc(px + player.width / 2, py + 6, 11, Math.PI, Math.PI * 2);
             ctx.fill();
@@ -2772,8 +3155,7 @@ function initPlatformer() {
             ctx.arc(px + player.width / 2 + 4 + eyeBaseX * 0.3 + pupilOff, py + 10, 1.5, 0, Math.PI * 2);
             ctx.fill();
             
-            // Legs (animated)
-            ctx.fillStyle = '#1565C0';
+            ctx.fillStyle = ac.legs;
             const legAnim = player.onGround ? Math.sin(player.animFrame) * 3 : 0;
             ctx.fillRect(px + 6, py + player.height - 4, 6, 6 + legAnim);
             ctx.fillRect(px + player.width - 12, py + player.height - 4, 6, 6 - legAnim);
@@ -2783,7 +3165,7 @@ function initPlatformer() {
         const progress = player.x / WORLD_WIDTH;
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.fillRect(10, 10, 150, 8);
-        ctx.fillStyle = '#4CAF50';
+        ctx.fillStyle = th.grass1;
         ctx.fillRect(10, 10, 150 * progress, 8);
         ctx.strokeStyle = 'rgba(255,255,255,0.5)';
         ctx.lineWidth = 1;
@@ -2793,6 +3175,28 @@ function initPlatformer() {
         ctx.beginPath();
         ctx.arc(10 + 150 * progress, 14, 4, 0, Math.PI * 2);
         ctx.fill();
+
+        // Level indicator
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText('Level ' + currentLevel + '/' + MAX_LEVELS, canvas.width - 12, 20);
+
+        // Level transition overlay
+        if (levelTransition > 0) {
+            levelTransition--;
+            const alpha = levelTransition > 60 ? 1 : levelTransition / 60;
+            ctx.fillStyle = 'rgba(0,0,0,' + (alpha * 0.6) + ')';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+            ctx.font = 'bold 28px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Level ' + currentLevel + ' Complete!', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.font = '16px Arial';
+            ctx.fillText('+25 bonus points', canvas.width / 2, canvas.height / 2 + 15);
+            ctx.textBaseline = 'alphabetic';
+        }
     }
     
     function handleKeyDown(e) {
@@ -2822,6 +3226,7 @@ function initPlatformer() {
     if (deathTimeout) { clearTimeout(deathTimeout); deathTimeout = null; }
     if (platformerGame) cancelAnimationFrame(platformerGame);
     
+    currentLevel = Math.min(Math.max(startLevel, 1), MAX_LEVELS);
     score = 0;
     const el = document.getElementById('platformer-score');
     if (el) el.textContent = score;

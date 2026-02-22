@@ -32,6 +32,36 @@
                 </div>
                 <div id="snake-start-screen" class="start-screen">
                     <h3>Ready to play Snake?</h3>
+                    <div class="game-options">
+                        <div class="option-group">
+                            <label>Speed</label>
+                            <div class="option-pills">
+                                <button class="pill" data-option="snake-speed" data-value="chill">Chill</button>
+                                <button class="pill active" data-option="snake-speed" data-value="normal">Normal</button>
+                                <button class="pill" data-option="snake-speed" data-value="fast">Fast</button>
+                                <button class="pill" data-option="snake-speed" data-value="insane">Insane</button>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label>Style</label>
+                            <div class="option-pills">
+                                <button class="pill active" data-option="snake-style" data-value="classic">Classic</button>
+                                <button class="pill" data-option="snake-style" data-value="neon">Neon</button>
+                                <button class="pill" data-option="snake-style" data-value="fire">Fire</button>
+                                <button class="pill" data-option="snake-style" data-value="rainbow">Rainbow</button>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label>Hat</label>
+                            <div class="option-pills">
+                                <button class="pill active" data-option="snake-hat" data-value="none">None</button>
+                                <button class="pill" data-option="snake-hat" data-value="crown">👑</button>
+                                <button class="pill" data-option="snake-hat" data-value="tophat">🎩</button>
+                                <button class="pill" data-option="snake-hat" data-value="party">🎉</button>
+                                <button class="pill" data-option="snake-hat" data-value="shades">😎</button>
+                            </div>
+                        </div>
+                    </div>
                     <button id="snake-start-btn" class="start-btn">Start Game</button>
                 </div>
                 <canvas id="snake-canvas" width="400" height="400" class="hidden"></canvas>
@@ -47,6 +77,16 @@
                 </div>
                 <div id="pacman-start-screen" class="start-screen">
                     <h3>Ready to play Pac-Man?</h3>
+                    <div class="game-options">
+                        <div class="option-group">
+                            <label>Difficulty</label>
+                            <div class="option-pills">
+                                <button class="pill" data-option="pacman-diff" data-value="easy">Easy</button>
+                                <button class="pill active" data-option="pacman-diff" data-value="normal">Normal</button>
+                                <button class="pill" data-option="pacman-diff" data-value="hard">Hard</button>
+                            </div>
+                        </div>
+                    </div>
                     <button id="pacman-start-btn" class="start-btn">Start Game</button>
                 </div>
                 <canvas id="pacman-canvas" width="400" height="400" class="hidden"></canvas>
@@ -61,7 +101,16 @@
                 </div>
                 <div id="minesweeper-start-screen" class="start-screen">
                     <h3>Ready to play Minesweeper?</h3>
-                    <p>16×16 board · 40 mines</p>
+                    <div class="game-options">
+                        <div class="option-group">
+                            <label>Difficulty</label>
+                            <div class="option-pills">
+                                <button class="pill" data-option="mine-diff" data-value="beginner">Beginner · 9×9</button>
+                                <button class="pill active" data-option="mine-diff" data-value="intermediate">Intermediate · 16×16</button>
+                                <button class="pill" data-option="mine-diff" data-value="expert">Expert · 20×20</button>
+                            </div>
+                        </div>
+                    </div>
                     <button id="minesweeper-start-btn" class="start-btn">Start Game</button>
                 </div>
                 <div id="minesweeper-wrapper" class="hidden">
@@ -85,6 +134,24 @@
                 </div>
                 <div id="tetris-start-screen" class="start-screen">
                     <h3>Ready to play Tetris?</h3>
+                    <div class="game-options">
+                        <div class="option-group">
+                            <label>Starting Speed</label>
+                            <div class="option-pills">
+                                <button class="pill" data-option="tetris-speed" data-value="slow">Slow</button>
+                                <button class="pill active" data-option="tetris-speed" data-value="normal">Normal</button>
+                                <button class="pill" data-option="tetris-speed" data-value="fast">Fast</button>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label>Board</label>
+                            <div class="option-pills">
+                                <button class="pill active" data-option="tetris-board" data-value="standard">Standard</button>
+                                <button class="pill" data-option="tetris-board" data-value="wide">Wide</button>
+                                <button class="pill" data-option="tetris-board" data-value="tall">Tall</button>
+                            </div>
+                        </div>
+                    </div>
                     <button id="tetris-start-btn" class="start-btn">Start Game</button>
                 </div>
                 <canvas id="tetris-canvas" width="300" height="600" class="hidden"></canvas>
@@ -100,6 +167,36 @@
                 </div>
                 <div id="platformer-start-screen" class="start-screen">
                     <h3>Ready to play Platformer?</h3>
+                    <div class="game-options">
+                        <div class="option-group">
+                            <label>Avatar</label>
+                            <div class="option-pills">
+                                <button class="pill active" data-option="plat-color" data-value="classic">Classic</button>
+                                <button class="pill" data-option="plat-color" data-value="blue">Blue</button>
+                                <button class="pill" data-option="plat-color" data-value="red">Red</button>
+                                <button class="pill" data-option="plat-color" data-value="green">Green</button>
+                                <button class="pill" data-option="plat-color" data-value="purple">Purple</button>
+                                <button class="pill" data-option="plat-color" data-value="gold">Gold</button>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label>World</label>
+                            <div class="option-pills">
+                                <button class="pill active" data-option="plat-theme" data-value="forest">Forest</button>
+                                <button class="pill" data-option="plat-theme" data-value="desert">Desert</button>
+                                <button class="pill" data-option="plat-theme" data-value="ice">Ice</button>
+                                <button class="pill" data-option="plat-theme" data-value="night">Night</button>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label>Start Level</label>
+                            <div class="option-pills">
+                                <button class="pill active" data-option="plat-level" data-value="1">Level 1</button>
+                                <button class="pill" data-option="plat-level" data-value="2">Level 2</button>
+                                <button class="pill" data-option="plat-level" data-value="3">Level 3</button>
+                            </div>
+                        </div>
+                    </div>
                     <button id="platformer-start-btn" class="start-btn">Start Game</button>
                 </div>
                 <canvas id="platformer-canvas" width="800" height="400" class="hidden"></canvas>
